@@ -43,6 +43,7 @@ catkin_package(
   CATKIN_DEPENDS std_msgs
   )
 
+
 include_directories(
     "${PROJECT_SOURCE_DIR}/include/"
     "${PROJECT_SOURCE_DIR}/src/"
@@ -56,6 +57,7 @@ add_executable(msfm3d msfm3d_node.cpp)
 target_link_libraries(msfm3d
   ${catkin_LIBRARIES}
 )
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
 add_executable(costmap_generator src/costmap_generator.cpp)
 target_link_libraries(costmap_generator
