@@ -28,7 +28,7 @@
     <param name="resolution" value="$(arg resolution)"/>
 
     <!-- The planner assumes the vehicle is an air vehicle.  If the vehicle is constrained to the ground (wheeled vehicle), set to true. -->
-    <param name="isGroundVehicle" value="false"/>
+    <param name="isGroundVehicle" value="true"/>
 
     <!-- If the vehicle is an air vehicle, the following params should be set -->
     <param name="minGoalDist" value="1.5" />

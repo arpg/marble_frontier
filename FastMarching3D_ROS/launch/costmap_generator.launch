@@ -14,7 +14,7 @@
 
     <remap from="esdf" to="edt"/>
     <!-- <remap from="esdf" to="voxblox_node/esdf_pointcloud"/> -->
-    <!-- <remap from="octomap_binary" to="merged_map"/> -->
+    <remap from="octomap_binary" to="merged_map"/>
     <!-- <remap from="traversability_map" to="traversability_map"/> -->
   </node>
 
