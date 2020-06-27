@@ -18,7 +18,7 @@
     <!-- <remap from="traversability_map" to="traversability_map"/> -->
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="pcl_manager_costmap" args="manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" name="pcl_manager_costmap" args="manager" />
 
   <!-- Run a passthrough filter to clean NaNs -->
   <!-- <node pkg="nodelet" type="nodelet" name="passthrough_costmap" args="load pcl/PassThrough pcl_manager_costmap" output="screen">
@@ -32,7 +32,7 @@
     </rosparam>
   </node> -->
 
-  <node pkg="nodelet" type="nodelet" name="passthrough_reach" args="load pcl/PassThrough pcl_manager_costmap" output="screen">
+  <node pkg="nodelet" type="nodelet" name="passthrough_reach" args="load pcl/PassThrough pcl_manager_costmap">
     <remap from="~input" to="reach_grid" />
     <remap from="~output" to="reach_grid_filtered" />
     <rosparam>
