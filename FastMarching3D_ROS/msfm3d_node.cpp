@@ -2606,7 +2606,11 @@ void reach( Msfm3d& planner, const bool usesecond, const bool usecross, const in
         // Exit when nFront frontiers have been reached.
         // TO-DO Change criteria to stop when the best num_Neighbor poses have been reached.
         if (frontCount >= nFront && !reachOrigin) break;
-        if (((double)(clock() - tStart)/CLOCKS_PER_SEC) >= timeOut) {
+        if ((((double)(clock() - tStart)/CLOCKS_PER_SEC) >= timeOut) && (!reachOrigin)) {
+          ROS_INFO("Reachbility calculation timed out after %0.2f seconds.", (double)(clock() - tStart)/CLOCKS_PER_SEC);
+          break;
+        }
+        else if ((((double)(clock() - tStart)/CLOCKS_PER_SEC) >= 4.0*timeOut) && (reachOrigin)) {
           ROS_INFO("Reachbility calculation timed out after %0.2f seconds.", (double)(clock() - tStart)/CLOCKS_PER_SEC);
           break;
         }
