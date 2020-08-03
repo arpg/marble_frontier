@@ -1467,7 +1467,7 @@ bool Msfm3d::updatePath(const float goal[3])
   start.neighbors = getNeighbors(start.id);
   start.parent = -1;
   index3_xyz(goal_idx, start.position);
-  
+
   visited.push_back(start);
   node_id_list[start.id] = visited.size()-1;
 
@@ -1500,7 +1500,7 @@ bool Msfm3d::updatePath(const float goal[3])
       if (node_id_list[neighbor_id] == -1) {
         neighbor_is_new = true;
         Node neighbor;
-        neighbor.id = neighbor_id; 
+        neighbor.id = neighbor_id;
         index3_xyz(neighbor.id, neighbor.position);
         neighbor.h = reach[neighbor.id];
         // neighbor.h = dist3(neighbor.position, position)/esdf.data[neighbor_id];
@@ -2985,6 +2985,8 @@ int main(int argc, char **argv)
   visualization_msgs::MarkerArray group_marker_msg;
   ros::Publisher pub14 = n.advertise<visualization_msgs::MarkerArray>("goal_views", 5);
   visualization_msgs::MarkerArray goal_views_marker_msg;
+  ros::Publisher pub15 = n.advertise<std_msgs::Bool>("follow_traj", 5);
+  std_msgs::Bool traj_follow;
 
   int i = 0;
   bool goalFound = 0;
@@ -3272,9 +3274,13 @@ int main(int argc, char **argv)
             if (planner.task == "guiCommand") pub8.publish(noPathMsg);
             if ((planner.task == "Home") || (planner.task == "Report")) pub8.publish(noPathHomeMsg);
             ROS_WARN("Couldn't find feasible path to goal.  Publishing previous path");
+            traj_follow.data = true;
           } else {
             if ((planner.task == "Home") || (planner.task == "Report")) pub8.publish(gotPathHomeMsg);
+            traj_follow.data = false;
           }
+          //pub15.publish(traj_follow);
+
 
           if (planner.ground) {
             newPath = planner.pathmsg;
