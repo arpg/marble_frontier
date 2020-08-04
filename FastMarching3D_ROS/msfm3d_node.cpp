@@ -3275,7 +3275,7 @@ int main(int argc, char **argv)
 
           // Calculate and publish path
           if (!(planner.updatePath(goal))) {
-            if (planner.task == "guiCommand") pub8.publish(noPathMsg);
+            if ((planner.task == "guiCommand") || (planner.task == "Explore")) pub8.publish(noPathMsg);
             if ((planner.task == "Home") || (planner.task == "Report")) pub8.publish(noPathHomeMsg);
             ROS_WARN("Couldn't find feasible path to goal.  Publishing previous path");
             traj_follow.data = true;
