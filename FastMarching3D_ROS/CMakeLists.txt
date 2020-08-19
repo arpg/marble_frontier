@@ -57,6 +57,8 @@ target_link_libraries(msfm3d
   ${catkin_LIBRARIES}
 )
 
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
+
 add_executable(costmap_generator src/costmap_generator.cpp)
 target_link_libraries(costmap_generator
   ${catkin_LIBRARIES}
