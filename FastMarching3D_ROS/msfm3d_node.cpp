@@ -3283,7 +3283,7 @@ int main(int argc, char **argv)
             if ((planner.task == "Home") || (planner.task == "Report")) pub8.publish(gotPathHomeMsg);
             traj_follow.data = false;
           }
-          //pub15.publish(traj_follow);
+          pub15.publish(traj_follow);
 
 
           if (planner.ground) {
