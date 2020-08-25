@@ -155,6 +155,22 @@ struct Node
   std::vector<int> neighbors;
   float position[3];
 };
+struct Boundary {
+  bool set = 0;
+  float xmin = 0.0, xmax = 0.0, ymin = 0.0, ymax = 0.0, zmin = 0.0, zmax = 0.0;
+};
+bool CheckPointInBoundary(const float point[3], Boundary b)
+{
+  if (b.set) {
+    if ((point[0] < b.xmin) || (point[0] > b.xmax)) return false;
+    if ((point[1] < b.ymin) || (point[1] > b.ymax)) return false;
+    if ((point[2] < b.zmin) || (point[2] > b.zmax)) return false;
+    return true;
+  }
+  else {
+    return false;
+  }
+}
 
 //Msfm3d class declaration
 class Msfm3d
@@ -193,10 +209,6 @@ class Msfm3d
       float max[4]; // max and min values in each dimension
       float min[4];
     };
-    struct Boundary {
-      bool set = 0;
-      float xmin = 0.0, xmax = 0.0, ymin = 0.0, ymax = 0.0, zmin = 0.0, zmax = 0.0;
-    };
 
     // Vehicle parameters
     bool ground = false; // whether the vehicle is a ground vehicle
@@ -220,7 +232,9 @@ class Msfm3d
     float voxel_size;
     float bubble_radius = 1.0; // map voxel size, and bubble radius
     float origin[3]; // location in xyz coordinates where the robot entered the environment
-    float entranceRadius; // radius around the origin where frontiers can't exist
+    float entranceRadius = 0.0; // radius around the origin where frontiers can't exist
+    std::string entranceShape = "Box";
+    Boundary entranceBox;
     float inflateWidth = 0.0;
     int minViewCloudSize = 10;
 
@@ -304,7 +318,18 @@ class Msfm3d
     void updateGoalPoses();
     void inflateObstacles(const float radius, sensor_msgs::PointCloud2& inflatedOccupiedMsg);
     float heightAGL(const float point[3]);
+    bool inEntrance(const float point[3]);
 };
+
+bool Msfm3d::inEntrance(const float point[3])
+{
+  if (entranceShape == "Box") {
+    if (CheckPointInBoundary(point, entranceBox)) return true;
+  } else if (entranceShape == "Sphere") {
+    if (dist3(point, origin) <= entranceRadius) return true;
+  }
+  return false;
+}
 
 void Msfm3d::callback_customGoal(const geometry_msgs::PoseStamped msg)
 {
@@ -1936,7 +1961,13 @@ bool updateFrontier(Msfm3d& planner, ros::Publisher& frontier_publisher)
 
       // Check if the voxel is at the entrance
 
-      if (frontier && (dist3(point, planner.origin) <= planner.entranceRadius)) {
+      // if (frontier && (dist3(point, planner.origin) <= planner.entranceRadius)) {
+      //   pass5++;
+      //   planner.entrance[i] = 1;
+      //   frontier = 0;
+      // }
+
+      if (frontier && planner.inEntrance(point)) {
         pass5++;
         planner.entrance[i] = 1;
         frontier = 0;
@@ -2797,15 +2828,19 @@ int main(int argc, char **argv)
   planner.dzFrontierVoxelWidth = dzFrontierVoxelWidth;
 
   // Origin/Tunnel Entrance
-  float origin_x, origin_y, origin_z, entranceRadius;
-  n.param("global_planning/entrance_x", origin_x, (float)0.0);
-  n.param("global_planning/entrance_y", origin_y, (float)0.0);
-  n.param("global_planning/entrance_z", origin_z, (float)0.6);
-  n.param("global_planning/entrance_radius", entranceRadius, (float)10.0);
-  planner.origin[0] = origin_x;
-  planner.origin[1] = origin_y;
-  planner.origin[2] = origin_z;
-  planner.entranceRadius = entranceRadius;
+  n.param<std::string>("global_planning/entranceShape", planner.entranceShape, "Sphere");
+  n.param("global_planning/entrance_x", planner.origin[0], (float)0.0);
+  n.param("global_planning/entrance_y", planner.origin[1], (float)0.0);
+  n.param("global_planning/entrance_z",planner.origin[2], (float)0.6);
+  n.param("global_planning/entrance_radius", planner.entranceRadius, (float)10.0);
+
+  if (planner.entranceShape == "Box") planner.entranceBox.set = true;
+  n.param("global_planning/entranceBox_xmin", planner.entranceBox.xmin, (float)0.0);
+  n.param("global_planning/entranceBox_xmax", planner.entranceBox.xmax, (float)0.0);
+  n.param("global_planning/entranceBox_ymin", planner.entranceBox.ymin, (float)0.0);
+  n.param("global_planning/entranceBox_ymax", planner.entranceBox.ymax, (float)0.0);
+  n.param("global_planning/entranceBox_zmin", planner.entranceBox.zmin, (float)0.0);
+  n.param("global_planning/entranceBox_zmax", planner.entranceBox.zmax, (float)0.0);
 
   // Vehicle camera field of View and max range
   float verticalFoV, horizontalFoV, rMax, rMin;
@@ -2899,10 +2934,8 @@ int main(int argc, char **argv)
 
   // Multi-agent parameters
   bool multiAgentOn;
-  int agentCount;
   float goalViewSeparation;
   n.param("global_planning/multiAgent", multiAgentOn, false);
-  n.param("global_planning/agentCount", agentCount, 5);
   n.param("global_planning/goalViewSeparation", goalViewSeparation, (float)5.0);
 
   // minViewCloudSize
@@ -2998,13 +3031,7 @@ int main(int argc, char **argv)
   clock_t tStart;
   int npixels;
   int spins = 0;
-  int goalViewList[agentCount];
-  double goalViewCost[agentCount];
   int oldFrontierClusterCount = 0;
-  for (int i=0; i<agentCount; i++) {
-    goalViewList[i] = 0;
-    goalViewCost[i] = -1.0;
-  }
   float goal[3] = {0.0, 0.0, 0.0};
   int replan_ticks = 0;
   double costHome = -1.0;
@@ -3018,6 +3045,13 @@ int main(int argc, char **argv)
     r.sleep();
     ros::spinOnce();
     ROS_INFO("Planner Okay.");
+    int agentCount = planner.numNeighbors + 1;
+    int goalViewList[agentCount];
+    double goalViewCost[agentCount];
+    for (int i=0; i<agentCount; i++) {
+      goalViewList[i] = 0;
+      goalViewCost[i] = -1.0;
+    }
     if (planner.receivedMap && !planner.esdf_or_octomap){
       planner.parsePointCloud();
     }

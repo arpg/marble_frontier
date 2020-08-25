@@ -46,7 +46,6 @@
     <param name="minViewCloudSize" value="5"/>
 
     <!-- Frontier Clustering parameters (in voxels) -->
-    <param name="cluster_radius" value="0.225" />
     <param name="min_cluster_size" value="100" />
     <param name="normalThresholdZ" value="0.4" />
 
@@ -59,17 +58,26 @@
     <!-- <param name="replanTrigger" type="string" value="distance"/> -->
 
     <!-- Location of the environment entrance. (Default is [0.0, 0.0, 0.0])  The robot will not explore area within entrance_radius meters of this point -->
-    <param name="entrance_x" value="-10.0" />
-    <param name="entrance_y" value="0.0" />
-    <param name="entrance_z" value="0.0" />
-    <!-- <param name="entrance_x" value="10.0" />
-    <param name="entrance_y" value="27.0" />
-    <param name="entrance_z" value="7.6" /> -->
-    <!-- <param name="entrance_x" value="4.0" /> -->
-    <!-- <param name="entrance_y" value="0.0" /> -->
-    <!-- <param name="entrance_z" value="0.1" /> -->
+    <param name="entranceShape" value="Box"/>
+      <!-- If entrance is sphere -->
+      <param name="entrance_x" value="-10.0" />
+      <param name="entrance_y" value="0.0" />
+      <param name="entrance_z" value="0.0" />
+      <!-- <param name="entrance_x" value="10.0" />
+      <param name="entrance_y" value="27.0" />
+      <param name="entrance_z" value="7.6" /> -->
+      <!-- <param name="entrance_x" value="4.0" /> -->
+      <!-- <param name="entrance_y" value="0.0" /> -->
+      <!-- <param name="entrance_z" value="0.1" /> -->
+      <param name="entrance_radius" value="11.0" />
 
-    <param name="entrance_radius" value="11.0" />
+      <!-- If entrance is box -->
+      <param name="entranceBox_xmin" value= "-10.0"/>
+      <param name="entranceBox_xmax" value= "0.0"/>
+      <param name="entranceBox_ymin" value= "-10.0"/>
+      <param name="entranceBox_ymax" value= "10.0"/>
+      <param name="entranceBox_zmin" value= "-2.0"/>
+      <param name="entranceBox_zmax" value= "5.0"/>
 
     <!-- Camera viewing parameters, angles in degrees, ranges in meters -->
     <param name="cameraVerticalFoV" value="10.0"/>
@@ -119,7 +127,6 @@
     <param name="dzFrontierVoxelWidth" type="int" value="-1"/>
 
     <!-- Multi-agent Parameters -->
-    <param name="agentCount" value="1"/>
     <param name="goalViewSeparation" value = "2.5"/>
 
     <!-- Cost Function -->
