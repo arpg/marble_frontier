@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <group ns="H01">
-    <arg name="resolution" default="0.15" />
-    <!-- <include file="$(find marble_guidance)/launch/guidance.launch"/> -->
-    <!-- <include file="$(find ground_finder)/launch/traversability_mapping.launch"/> -->
-    <!-- <include file="$(find ground_finder)/launch/ground_finder.launch"/> -->
+  <!-- <group ns="H01"> -->
+    <arg name="resolution" default="0.2" />
+    <include file="$(find marble_guidance)/launch/guidance.launch"/>
+    <include file="$(find ground_finder)/launch/traversability_mapping.launch"/>
+    <include file="$(find ground_finder)/launch/ground_finder.launch"/>
     <include file="$(find msfm3d)/launch/msfm3d.launch">
         <arg name="resolution" value="$(arg resolution)"/>
     </include>
     <include file="$(find msfm3d)/launch/costmap_generator.launch">
         <arg name="resolution" value="$(arg resolution)"/>
     </include>
-  </group>
+  <!-- </group> -->
 </launch>
