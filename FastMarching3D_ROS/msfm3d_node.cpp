@@ -2381,8 +2381,8 @@ void view2MarkerMsg(const View cameraView, const SensorFoV camera, visualization
   marker.points.push_back(BL);
 }
 
-void reach( Msfm3d& planner, const bool usesecond, const bool usecross, const int nFront, bool reachOrigin, const double timeOut = 0.5) {
-    double tStart = clock();
+void reach( Msfm3d& planner, const bool usesecond, const bool usecross, const int nFront, bool reachOrigin, const double timeOut = 5.0) {
+    double tStart = ros::Time::now().toSec();
     /* The input variables */
     double *F;
     int SourcePoints[3];
@@ -2640,11 +2640,12 @@ void reach( Msfm3d& planner, const bool usesecond, const bool usecross, const in
         // Exit when nFront frontiers have been reached.
         // TO-DO Change criteria to stop when the best num_Neighbor poses have been reached.
         if (frontCount >= nFront && !reachOrigin) break;
-        if ((((double)(clock() - tStart)/CLOCKS_PER_SEC) >= timeOut) && (!reachOrigin)) {
+        double currenTime = ros::Time::now().toSec();
+        if (((currenTime - tStart) >= timeOut) && (!reachOrigin)) {
           ROS_INFO("Reachbility calculation timed out after %0.2f seconds.", (double)(clock() - tStart)/CLOCKS_PER_SEC);
           break;
         }
-        else if ((((double)(clock() - tStart)/CLOCKS_PER_SEC) >= 4.0*timeOut) && (reachOrigin)) {
+        else if (((currenTime - tStart) >= 4.0*timeOut) && (reachOrigin)) {
           ROS_INFO("Reachbility calculation timed out after %0.2f seconds.", (double)(clock() - tStart)/CLOCKS_PER_SEC);
           break;
         }
