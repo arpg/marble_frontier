@@ -160,8 +160,9 @@ class guidance_controller:
 
 		# Do altitude control for air vehicles
 		if self.vehicle_type == 'air':
-			error = L2_vec[2]
-			self.command.linear.z = self.gain_z*error
+                        if len(L2_vec) > 2:
+                            error = L2_vec[2]
+                            self.command.linear.z = self.gain_z*error
 
 		if (self.vehicle_type == 'air'):
 			if (np.linalg.norm(p_L2 - goal) <= 0.6):
