@@ -14,6 +14,6 @@
     <remap from="odometry" to="odometry" />
     <remap from="path" to="ma_goal_path"/>
     <remap from="goal_pose" to="ma_goal"/>
-    <!-- <remap from="cmd_vel" to="cmd_vel_guidance"/> -->
+    <remap from="cmd_vel" to="cmd_vel_guidance"/>
   </node>
 </launch>
