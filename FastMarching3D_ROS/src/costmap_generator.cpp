@@ -15,8 +15,14 @@
 // pcl ROS
 #include <pcl_conversions/pcl_conversions.h>
 
-
 #define PI 3.14159265
+
+octomap::OcTree* occupancyTree; // OcTree object for holding occupancy Octomap
+octomap::OcTree* traverseTree; // OcTree object for holding traversability Octomap
+bool updatedOccupancy = false;
+bool updatedTraverse = false;
+bool updatedTraverseFirst = false;
+bool updatedOccupancyFirst = false;
 
 void index3_xyz(const int index, double point[3], double min[3], int size[3], double voxelSize)
 {
@@ -44,8 +50,8 @@ class Costmap_fuser
     Costmap_fuser(double resolution):
     esdfCloud(new pcl::PointCloud<pcl::PointXYZI>)
     {
-      occupancyTree = new octomap::OcTree(resolution);
-      traverseTree = new octomap::OcTree(resolution);
+      // occupancyTree = new octomap::OcTree(resolution);
+      // traverseTree = new octomap::OcTree(resolution);
       voxelSize = resolution;
     }
 
@@ -56,18 +62,18 @@ class Costmap_fuser
     sensor_msgs::PointCloud2 fusedMsg;
 
     // Holder arrays
-    octomap::OcTree* occupancyTree; // OcTree object for holding occupancy Octomap
-    octomap::OcTree* traverseTree; // OcTree object for holding traversability Octomap
+    // octomap::OcTree* occupancyTree; // OcTree object for holding occupancy Octomap
+    // octomap::OcTree* traverseTree; // OcTree object for holding traversability Octomap
     pcl::PointCloud<pcl::PointXYZI>::Ptr esdfCloud;
     Point esdfMin;
     Point esdfMax;
 
     // Subscribed Message update booleans
-    bool updatedOccupancy = false;
-    bool updatedTraverse = false;
+    // bool updatedOccupancy = false;
+    // bool updatedTraverse = false;
     bool updatedEsdf = false;
-    bool updatedOccupancyFirst = false;
-    bool updatedTraverseFirst = false;
+    // bool updatedOccupancyFirst = false;
+    // bool updatedTraverseFirst = false;
     bool updatedEsdfFirst = false;
 
     // World frame
@@ -81,12 +87,12 @@ class Costmap_fuser
 
     // Method Definitions
     void callback_cloud(const sensor_msgs::PointCloud2ConstPtr& msg);
-    void callback_octomap(const octomap_msgs::Octomap::ConstPtr msg);
-    void callback_traverse(const octomap_msgs::Octomap::ConstPtr msg);
+    // void callback_octomap(const octomap_msgs::Octomap::ConstPtr msg);
+    // void callback_traverse(const octomap_msgs::Octomap::ConstPtr msg);
     void fuse_maps();
 };
 
-void Costmap_fuser::callback_octomap(const octomap_msgs::Octomap::ConstPtr msg)
+void callback_octomap(const octomap_msgs::Octomap::ConstPtr msg)
 {
   ROS_INFO("Occupancy octomap callback called");
   if (msg->data.size() == 0) return;
@@ -99,7 +105,7 @@ void Costmap_fuser::callback_octomap(const octomap_msgs::Octomap::ConstPtr msg)
   return;
 }
 
-void Costmap_fuser::callback_traverse(const octomap_msgs::Octomap::ConstPtr msg)
+void callback_traverse(const octomap_msgs::Octomap::ConstPtr msg)
 {
   ROS_INFO("Traversability octomap callback called");
   if (msg->data.size() == 0) return;
@@ -404,8 +410,8 @@ int main(int argc, char **argv)
 
   // Declare subscribers and publishers
   ros::Subscriber sub1 = n.subscribe("esdf", 1, &Costmap_fuser::callback_cloud, &mapFuser);
-  ros::Subscriber sub2 = n.subscribe("octomap_binary", 1, &Costmap_fuser::callback_octomap, &mapFuser);
-  ros::Subscriber sub3 = n.subscribe("traversability_map", 1, &Costmap_fuser::callback_traverse, &mapFuser);
+  ros::Subscriber sub2 = n.subscribe("octomap_binary", 1, callback_octomap);
+  ros::Subscriber sub3 = n.subscribe("traversability_map", 1, callback_traverse);
   ros::Publisher pub1 = n.advertise<sensor_msgs::PointCloud2>("cost_map", 5);
 
   // Fixed frame id
