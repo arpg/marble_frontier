@@ -2940,8 +2940,10 @@ int main(int argc, char **argv)
   // Multi-agent parameters
   bool multiAgentOn;
   float goalViewSeparation;
+  int addedGoals; // For replanning if we get stuck
   n.param("global_planning/multiAgent", multiAgentOn, false);
   n.param("global_planning/goalViewSeparation", goalViewSeparation, (float)5.0);
+  n.param("global_planning/addedGoals", addedGoals, 0);
 
   // minViewCloudSize
   n.param("global_planning/minViewCloudSize", planner.minViewCloudSize, 1);
@@ -3050,7 +3052,7 @@ int main(int argc, char **argv)
     r.sleep();
     ros::spinOnce();
     ROS_INFO("Planner Okay.");
-    int agentCount = planner.numNeighbors + 1;
+    int agentCount = planner.numNeighbors + 1 + addedGoals;
     int goalViewList[agentCount];
     double goalViewCost[agentCount];
     for (int i=0; i<agentCount; i++) {
