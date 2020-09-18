@@ -225,7 +225,7 @@ class Msfm3d
 
     // Environment/Sensor parameters
     std::string frame = "world";
-    bool esdf_or_octomap = 0; // Boolean to use an esdf PointCloud2 or an Octomap as input
+    bool esdf_or_octomap = 0; // Use a TSDF/ESDF message PointCloud2 (0) or Use an octomap message (1)
     bool receivedPosition = 0;
     bool receivedMap = 0;
     bool updatedMap = 0;
@@ -1468,6 +1468,10 @@ std::vector<float> reconstructPath(std::vector<Node> visited, Node end) {
 
 bool Msfm3d::updatePath(const float goal[3])
 {
+  if (!ground) {
+    return updatePathOneVoxel(goal);
+  }
+
   int npixels = esdf.size[0]*esdf.size[1]*esdf.size[2]; // size of the reachability array, index in reachability array of the current path voxel.
   int goal_idx = xyz_index3(goal);
   if (goal_idx < 0 || goal_idx > npixels){
@@ -1478,7 +1482,7 @@ bool Msfm3d::updatePath(const float goal[3])
     ROS_INFO("Goal point is either too far away or is blocked by an obstacle.");
     return false;
   }
-  ROS_INFO("Attempting to find path to [%0.1f, %0.1f, %0.1f] from [%0.1f, %0.1f, %0.1f].", goal[0], goal[1], goal[2], position[0], position[1], position[2]);
+  ROS_INFO("Attempting to find path to [%0.2f, %0.2f, %0.2f] from [%0.2f, %0.2f, %0.2f].", goal[0], goal[1], goal[2], position[0], position[1], position[2]);
   std::vector<int> node_id_list(npixels, -1);
   std::vector<Node> visited;
 
@@ -1502,7 +1506,7 @@ bool Msfm3d::updatePath(const float goal[3])
   while (open_set.size()>0) {
     itt++;
     Node current = open_set.back();
-    // ROS_INFO("Current node, [%0.1f, %0.1f, %0.1f], g = %0.2f, h = %0.2f, f = %0.2f, has %d neighbors", current.position[0], current.position[1], current.position[2], current.g, current.h, current.f, current.neighbors.size());
+    if (itt < 10) ROS_INFO("Current node, [%0.2f, %0.2f, %0.2f], g = %0.2f, h = %0.2f, f = %0.2f, has %d neighbors", current.position[0], current.position[1], current.position[2], current.g, current.h, current.f, current.neighbors.size());
     // if (current.id == xyz_index3(position)) {
     if (dist2(current.position, position) <= 3*voxel_size) {
       std::vector<float> path = reconstructPath(visited, current); // Stop if the robot's current position (the goal) has been reached.
@@ -1515,7 +1519,7 @@ bool Msfm3d::updatePath(const float goal[3])
         newpathmsg.poses.push_back(pose);
       }
       pathmsg = newpathmsg;
-      ROS_INFO("Path found of length %d.", newpathmsg.poses.size());
+      ROS_INFO("Path found of length %d after %d iterations.", newpathmsg.poses.size(), itt);
       return true;
     }
     open_set.pop_back();
