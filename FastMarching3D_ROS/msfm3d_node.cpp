@@ -3012,13 +3012,6 @@ int main(int argc, char **argv)
   sensor_msgs::PointCloud2 inflatedOccupiedMsg;
   ros::Publisher pub7 = n.advertise<msfm3d::GoalArray>("goal_array", 5);
   msfm3d::GoalArray goalArrayMsg;
-  ros::Publisher pub8 = n.advertise<std_msgs::String>("task", 5);
-  std_msgs::String noPathMsg;
-  noPathMsg.data = "Unable to plan";
-  std_msgs::String noPathHomeMsg;
-  noPathHomeMsg.data = "Unable to plan home";
-  std_msgs::String gotPathHomeMsg;
-  gotPathHomeMsg.data = "Able to plan home";
   ros::Publisher pub9 = n.advertise<sensor_msgs::PointCloud2>("reach_grid", 5);
   ros::Publisher pub10 = n.advertise<visualization_msgs::Marker>("goal_points", 5);
   visualization_msgs::Marker goalMsg;
@@ -3029,8 +3022,7 @@ int main(int argc, char **argv)
   visualization_msgs::MarkerArray group_marker_msg;
   ros::Publisher pub14 = n.advertise<visualization_msgs::MarkerArray>("goal_views", 5);
   visualization_msgs::MarkerArray goal_views_marker_msg;
-  ros::Publisher pub15 = n.advertise<std_msgs::Bool>("follow_traj", 5);
-  std_msgs::Bool traj_follow;
+  ros::Publisher pub15 = n.advertise<std_msgs::Bool>("planner_status", 5);
 
   int i = 0;
   bool goalFound = 0;
@@ -3315,16 +3307,10 @@ int main(int argc, char **argv)
           ROS_INFO("Goal point published!");
 
           // Calculate and publish path
-          if (!(planner.updatePath(goal))) {
-            if ((planner.task == "guiCommand") || (planner.task == "Explore")) pub8.publish(noPathMsg);
-            if ((planner.task == "Home") || (planner.task == "Report")) pub8.publish(noPathHomeMsg);
+          goalFound = planner.updatePath(goal);
+          if (!goalFound)
             ROS_WARN("Couldn't find feasible path to goal.  Publishing previous path");
-            traj_follow.data = true;
-          } else {
-            if ((planner.task == "Home") || (planner.task == "Report")) pub8.publish(gotPathHomeMsg);
-            traj_follow.data = false;
-          }
-          pub15.publish(traj_follow);
+          pub15.publish(goalFound);
 
 
           if (planner.ground) {
@@ -3390,8 +3376,7 @@ int main(int argc, char **argv)
 
           // Find a path to the goal point
           goalFound = planner.updatePath(goal);
-          if (!goalFound && ((planner.task == "Home") || (planner.task == "Report"))) pub8.publish(noPathHomeMsg);
-          if (goalFound && ((planner.task == "Home") || (planner.task == "Report"))) pub8.publish(gotPathHomeMsg);
+          pub15.publish(goalFound);
 
            // Publish path, goal point, and goal point only path
           pub1.publish(frontierGoal);
