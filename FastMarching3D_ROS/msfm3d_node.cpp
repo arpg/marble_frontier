@@ -3025,7 +3025,7 @@ int main(int argc, char **argv)
   ros::Publisher pub15 = n.advertise<std_msgs::Bool>("planner_status", 5);
 
   int i = 0;
-  bool goalFound = 0;
+  std_msgs::Bool goalFound;
   ros::Rate r(updateRate); // Hz
   clock_t tStart;
   int npixels;
@@ -3307,8 +3307,8 @@ int main(int argc, char **argv)
           ROS_INFO("Goal point published!");
 
           // Calculate and publish path
-          goalFound = planner.updatePath(goal);
-          if (!goalFound)
+          goalFound.data = planner.updatePath(goal);
+          if (!goalFound.data)
             ROS_WARN("Couldn't find feasible path to goal.  Publishing previous path");
           pub15.publish(goalFound);
 
@@ -3321,7 +3321,7 @@ int main(int argc, char **argv)
           pub2.publish(newPath);
           pub9.publish(plotReach(planner));
           ROS_INFO("Path to goal published!");
-          goalFound = 0;
+          goalFound.data = 0;
 
           // Publish view frustum
           cameraFrustum.action = 2; // DELETE action
@@ -3375,7 +3375,7 @@ int main(int argc, char **argv)
           goalPose.pose.orientation.w = 1.0;
 
           // Find a path to the goal point
-          goalFound = planner.updatePath(goal);
+          goalFound.data = planner.updatePath(goal);
           pub15.publish(goalFound);
 
            // Publish path, goal point, and goal point only path
@@ -3386,7 +3386,7 @@ int main(int argc, char **argv)
           // Output and publish path
           pub2.publish(planner.pathmsg);
           ROS_INFO("Path to goal published!");
-          goalFound = 0;
+          goalFound.data = 0;
           pub9.publish(plotReach(planner));
 
           // Height debugging
