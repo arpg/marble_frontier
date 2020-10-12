@@ -159,6 +159,9 @@ struct Boundary {
   bool set = 0;
   float xmin = 0.0, xmax = 0.0, ymin = 0.0, ymax = 0.0, zmin = 0.0, zmax = 0.0;
 };
+struct Ball {
+  float x,y,z,r;
+};
 bool CheckPointInBoundary(const float point[3], Boundary b)
 {
   if (b.set) {
@@ -290,6 +293,8 @@ class Msfm3d
     std::string task = "explore";
     float customGoal[3] = {0.0, 0.0, 0.0};
 
+    std::vector<Ball> blacklist;
+
     void callback(sensor_msgs::PointCloud2 msg); // Subscriber callback function for PC2 msg (ESDF)
     void callback_Octomap(const octomap_msgs::Octomap::ConstPtr msg); // Subscriber callback function for Octomap msg
     void callback_Octomap_freePCL(const sensor_msgs::PointCloud2 msg);
@@ -299,6 +304,7 @@ class Msfm3d
     void callback_numNeighbors(const std_msgs::Int8 msg);
     void callback_task(const std_msgs::String msg);
     void callback_customGoal(const geometry_msgs::PoseStamped msg);
+    void callback_blacklist(const visualization_msgs::Marker msg);
     // void callback_artifactDetected(const marble_common::ArtifactArray msg);
     void parsePointCloud(); // Function to parse pointCloud2 into an esdf format that msfm3d can use
     int xyz_index3(const float point[3]);
@@ -316,6 +322,7 @@ class Msfm3d
     bool raycast(const pcl::PointXYZ start, const pcl::PointXYZ end);
     Pose samplePose(const pcl::PointXYZ centroid, const SensorFoV camera, const int sampleLimit);
     void updateGoalPoses();
+    void blackListGoalPoses();
     void inflateObstacles(const float radius, sensor_msgs::PointCloud2& inflatedOccupiedMsg);
     float heightAGL(const float point[3]);
     bool inEntrance(const float point[3]);
@@ -348,6 +355,20 @@ void Msfm3d::callback_task(const std_msgs::String msg)
 void Msfm3d::callback_numNeighbors(const std_msgs::Int8 msg)
 {
   numNeighbors = (int)msg.data;
+  return;
+}
+
+void Msfm3d::callback_blacklist(const visualization_msgs::Marker msg)
+{
+  blacklist.clear();
+  for (int i=0; i<msg.points.size(); i++) {
+    Ball b;
+    b.x = msg.points[i].x;
+    b.y = msg.points[i].y;
+    b.z = msg.points[i].z;
+    b.r = msg.scale.x;
+    blacklist.push_back(b);
+  }
   return;
 }
 
@@ -901,6 +922,33 @@ Pose Msfm3d::samplePose(const pcl::PointXYZ centroid, const SensorFoV camera, co
   return robotPose;
 }
 
+void Msfm3d::blackListGoalPoses()
+{
+  int blacklistCount = 0;
+  for (int i=0; i<blacklist.size(); i++) {
+    Ball b = blacklist[i];
+    ROS_INFO("Blacklist ball @ (%0.2f, %0.2f, %0.2f) of radius %0.2f", b.x, b.y, b.z, b.r);
+    std::vector<int> ids;
+    for (int j=0; j<goalViews.size(); j++) {
+      View v = goalViews[j];
+      float p_view[3] = {v.pose.position.x, v.pose.position.y, v.pose.position.z};
+      float p_blacklist[3] = {b.x, b.y, b.z};
+      if (dist3(p_view,p_blacklist) < b.r) {
+        ids.insert(ids.begin(), j); // ids put in descending order so we can remove them individually.
+        ROS_INFO("Goal %d @ (%0.2f, %0.2f, %0.2f) inside of ball %d", j, v.pose.position.x, v.pose.position.y, v.pose.position.z, i);
+      }
+    }
+
+    for (int j=0; j<ids.size(); j++) {
+      goalViews.erase(goalViews.begin() + ids[j]);
+      blacklistCount++;
+    }
+    ids.clear();
+  }
+  ROS_INFO("%d goals blacklisted", blacklistCount);
+  return;
+}
+
 void Msfm3d::updateGoalPoses()
 {
   // Conversion matrix from ENU to EUS
@@ -994,32 +1042,9 @@ void Msfm3d::updateGoalPoses()
   }
   ROS_INFO("Sampled %d possible goal poses for viewing the frontier.", (int)goalViews.size());
 
-  // // Get all the indices in the unviewable clusters
-  // for (int cluster=0; cluster<(int)frontierClusterIndices.size(); cluster++) {
-  //   if (clusterViewCounts[cluster] == 0) {
-  //     // Remove this cluster from the frontiers and the frontierCloud
-  //     for (int remove_index=0; remove_index<(int)frontierClusterIndices[cluster].indices.size(); remove_index++) {
-  //       removeablePoints->indices.push_back(frontierClusterIndices[cluster].indices[remove_index]);
-  //     }
-  //   }
-  // }
+  blackListGoalPoses();
 
-  // ROS_INFO("Removing %d unviewable voxels from the frontier...", (int)removeablePoints->indices.size());
-  // // Remove the filtered frontier voxels from the boolean storage array
-  // for (int i=0; i<(int)removeablePoints->indices.size(); i++) {
-  //   float query[3];
-  //   query[0] = frontierCloud->points[removeablePoints->indices[i]].x;
-  //   query[1] = frontierCloud->points[removeablePoints->indices[i]].y;
-  //   query[2] = frontierCloud->points[removeablePoints->indices[i]].z;
-  //   int idx = xyz_index3(query);
-  //   frontier[idx] = false;
-  // }
-  // // Remove the filtered frontier voxels from the PointCloud pointer.
-  // pcl::ExtractIndices<pcl::PointXYZ> extract;
-  // extract.setInputCloud(frontierCloud);
-  // extract.setIndices(removeablePoints);
-  // extract.setNegative(true);
-  // extract.filter(*frontierCloud);
+  return;
 }
 
 Eigen::Matrix3f quaternion2RotationMatrix(Quaternion q)
@@ -1506,7 +1531,7 @@ bool Msfm3d::updatePath(const float goal[3])
   while (open_set.size()>0) {
     itt++;
     Node current = open_set.back();
-    if (itt < 10) ROS_INFO("Current node, [%0.2f, %0.2f, %0.2f], g = %0.2f, h = %0.2f, f = %0.2f, has %d neighbors", current.position[0], current.position[1], current.position[2], current.g, current.h, current.f, current.neighbors.size());
+    // if (itt < 10) ROS_INFO("Current node, [%0.2f, %0.2f, %0.2f], g = %0.2f, h = %0.2f, f = %0.2f, has %d neighbors", current.position[0], current.position[1], current.position[2], current.g, current.h, current.f, current.neighbors.size());
     // if (current.id == xyz_index3(position)) {
     if (dist2(current.position, position) <= 3*voxel_size) {
       std::vector<float> path = reconstructPath(visited, current); // Stop if the robot's current position (the goal) has been reached.
@@ -2971,6 +2996,9 @@ int main(int argc, char **argv)
 
   ROS_INFO("Subscribing to custom goal point...");
   ros::Subscriber sub6 = n.subscribe("custom_goal_point", 1, &Msfm3d::callback_customGoal, &planner);
+
+  ROS_INFO("Subscribing to blacklist...");
+  ros::Subscriber sub7 = n.subscribe("blacklist", 1, &Msfm3d::callback_blacklist, &planner);
 
   ros::Publisher pub1 = n.advertise<geometry_msgs::PointStamped>("nearest_frontier", 5);
   geometry_msgs::PointStamped frontierGoal;
