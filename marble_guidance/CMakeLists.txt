@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(marble_guidance)
+project(marble_frontier_guidance)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
