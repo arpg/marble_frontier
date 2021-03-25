@@ -1,5 +1,5 @@
 <package format="2">
-  <name>marble_guidance</name>
+  <name>marble_frontier_guidance</name>
   <version>1.0.0</version>
   <description>
   This package provides path following velocity vector commands for 2D and 3D discrete path msgs.

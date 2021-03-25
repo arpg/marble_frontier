@@ -1,36 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Example launch file for a costmap fusion node
+  Example launch file for a costmap generator node
 -->
 <launch>
   <arg name="resolution" default="0.2" />
 
   <node pkg="msfm3d" type="costmap_generator" name="costmap_generator">
-    <param name="fixedFrame" type="string" value="world"/>
     <param name="rate" value="5.0"/>
-    <param name="resolution" value="$(arg resolution)"/>
-    <param name="untraversableDistance" value="0.05"/>
-    <param name="octomapFreeDistance" value="0.02"/>
+    <param name="octomap_free_cost" value="0.05"/>
+    <param name="unseen_cost" value="-1.0"/>
 
     <remap from="esdf" to="edt"/>
-    <!-- <remap from="esdf" to="voxblox_node/esdf_pointcloud"/> -->
-    <remap from="octomap_binary" to="merged_map"/>
-    <!-- <remap from="traversability_map" to="traversability_map"/> -->
+    <remap from="octomap_binary" to="octomap_ignore"/>
+    <remap from="cost_map" to="cost_map_prefilter"/>
+    <remap from="octomap_full" to="rough_octomap_full"/>
   </node>
 
   <node pkg="nodelet" type="nodelet" name="pcl_manager_costmap" args="manager" />
 
   <!-- Run a passthrough filter to clean NaNs -->
-  <!-- <node pkg="nodelet" type="nodelet" name="passthrough_costmap" args="load pcl/PassThrough pcl_manager_costmap" output="screen">
-    <remap from="~input" to="cost_map" />
-    <remap from="~output" to="cost_map_filtered" />
+  <node pkg="nodelet" type="nodelet" name="passthrough_costmap" args="load pcl/PassThrough pcl_manager_costmap">
+    <remap from="~input" to="cost_map_prefilter" />
+    <remap from="~output" to="cost_map" />
     <rosparam>
       filter_field_name: intensity
-      filter_limit_min: 0.051
+      filter_limit_min: -0.1
       filter_limit_max: 100.0
       filter_limit_negative: False
     </rosparam>
-  </node> -->
+  </node>
 
   <node pkg="nodelet" type="nodelet" name="passthrough_reach" args="load pcl/PassThrough pcl_manager_costmap">
     <remap from="~input" to="reach_grid" />

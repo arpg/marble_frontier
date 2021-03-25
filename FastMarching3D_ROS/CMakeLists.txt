@@ -59,7 +59,7 @@ target_link_libraries(msfm3d
 
 add_dependencies(msfm3d ${catkin_EXPORTED_TARGETS})
 
-add_executable(costmap_generator src/costmap_generator.cpp)
+add_executable(costmap_generator src/costmap_generator_simple.cpp)
 target_link_libraries(costmap_generator
   ${catkin_LIBRARIES}
 )
