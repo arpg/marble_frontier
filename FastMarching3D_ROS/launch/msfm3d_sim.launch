@@ -7,21 +7,24 @@
     <!-- Inputs (Subscribed Topic Names) -->
 
     <remap from="octomap_binary" to="octomap_binary_crap"/>
-    <remap from="odometry" to="odometry_map"/>
+    <!-- <remap from="odometry" to="odometry_map"/> -->
 
     <!-- Outputs (Published Topic Names) -->
 
-    <remap from="nearest_frontier" to="nearest_frontier_2"/>
-    <remap from="frontier_goal_pose" to="frontier_goal_pose_2"/>
-    <remap from="planned_path" to="planned_path_2"/>
-    <remap from="frontier" to="frontier_2"/>
-    <remap from="goalFrustum" to="goalFrustum_2"/>
+    <!-- <remap from="nearest_frontier" to="nearest_frontier_2"/> -->
+    <!-- <remap from="frontier_goal_pose" to="frontier_goal_pose_2"/> -->
+    <!-- <remap from="planned_path" to="planned_path_2"/> -->
+    <!-- <remap from="frontier" to="frontier_2"/> -->
+    <!-- <remap from="goalFrustum" to="goalFrustum_2"/> -->
     <!-- <remap from="inflated_octomap" to="inflated_octomap"/> -->
     <remap from="artifact_list" to="report_artifact"/>
     <remap from="voxblox_node/tsdf_pointcloud" to="cost_map"/>
     <!-- <remap from="voxblox_node/tsdf_pointcloud" to="voxblox_node/esdf_pointcloud"/> -->
 
     <!-- Parameters -->
+    <!-- Path tracing method -->
+    <param name="useReachGradient" value="true"/>
+
     <!-- Map Resolution -->
     <param name="resolution" value="$(arg resolution)"/>
 
@@ -29,8 +32,8 @@
     <param name="isGroundVehicle" value="$(arg ground_vehicle)"/>
 
     <!-- If the vehicle is an air vehicle, the following params should be set -->
-    <param name="minGoalDist" value="1.0" />
-    <param name="goalArrivalDist" value="1.0" />
+    <param name="minGoalDist" value="1.6" />
+    <param name="goalArrivalDist" value="1.6" />
 
 	 <!-- Whether or not you want to use an Occupancy Grid or an ESDF map type -->
     <param name="useOctomap" value="false"/>
@@ -44,14 +47,14 @@
     <param name="minViewCloudSize" value="10"/>
 
     <!-- Frontier Clustering parameters (in voxels) -->
-    <param name="cluster_radius" value="0.30" />
-    <param name="min_cluster_size" value="50" />
+    <param name="cluster_radius" value="0.35" />
+    <param name="min_cluster_size" value="100" />
     <param name="normalThresholdZ" value="0.4" />
 
     <!-- Number of ticks before replanning -->
-    <param name="replan_ticks" value="20" />
+    <param name="replan_ticks" value="30" />
     <!-- Number of ticks before sampling new goal poses -->
-    <param name="goal_ticks" value="10" />
+    <param name="goal_ticks" value="100" />
     <!-- Replan trigger method -->
     <!-- <param name="replanTrigger" type="string" value="frontier"/> -->
     <param name="replanTrigger" type="string" value="distance"/>
@@ -60,6 +63,9 @@
     <param name="entrance_x" value="2.0" />
     <param name="entrance_y" value="1.0" />
     <param name="entrance_z" value="0.4" />
+    <!-- <param name="entrance_x" value="7.5" />
+    <param name="entrance_y" value="-298.8" />
+    <param name="entrance_z" value="2.3" /> -->
     <!-- <param name="entrance_z" value="2.0" /> -->
     <param name="entrance_radius" value="0.0" />
 

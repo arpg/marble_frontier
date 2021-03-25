@@ -226,6 +226,9 @@ class Msfm3d
     float speed = 1.0; // m/s
     float turnPenalty = 0.2; // Weight to place on an initial heading error
 
+    // Use gradients for path updates
+    bool useReachGradient = false;
+
     // Environment/Sensor parameters
     std::string frame = "world";
     bool esdf_or_octomap = 0; // Use a TSDF/ESDF message PointCloud2 (0) or Use an octomap message (1)
@@ -310,8 +313,8 @@ class Msfm3d
     int xyz_index3(const float point[3]);
     void index3_xyz(const int index, float point[3]);
     void getEuler(); // Updates euler array given the current quaternion values
-    bool updatePath(const float goal[3]); // Updates the path vector from the goal frontier point to the robot location
-    bool updatePathOneVoxel(const float goal[3]);
+    bool updatePath(const float goal[3], const bool use_gradient); // Updates the path vector from the goal frontier point to the robot location
+    bool updatePathGradient(const float goal[3]);
     std::vector<int> getNeighbors(int id);
     void updateFrontierMsg(); // Updates the frontiermsg MarkerArray with the frontier matrix for publishing
     bool clusterFrontier(const bool print2File); // Clusters the frontier pointCloud with euclidean distance within a radius
@@ -1296,7 +1299,7 @@ void Msfm3d::parsePointCloud()
   }
 
   // Replace max, min, and size esdf properties
-  for (int i=0; i<4; i++) { esdf.max[i] = xyzi_max[i] + voxel_size; esdf.min[i] = xyzi_min[i] - voxel_size; } // Add 1 voxel to the maxes and subtract 1 voxel from the mins to get desired frontier performance
+  for (int i=0; i<4; i++) { esdf.max[i] = xyzi_max[i] + 3.0*voxel_size; esdf.min[i] = xyzi_min[i] - 3.0*voxel_size; } // Add 1 voxel to the maxes and subtract 1 voxel from the mins to get desired frontier performance
   for (int i=0; i<3; i++) esdf.size[i] = roundf((esdf.max[i]-esdf.min[i])/voxel_size) + 1;
 
   // Print out the max and min values with the size values.
@@ -1491,12 +1494,8 @@ std::vector<float> reconstructPath(std::vector<Node> visited, Node end) {
   return path;
 }
 
-bool Msfm3d::updatePath(const float goal[3])
+bool Msfm3d::updatePath(const float goal[3], const bool use_gradient = false)
 {
-  if (!ground) {
-    return updatePathOneVoxel(goal);
-  }
-
   int npixels = esdf.size[0]*esdf.size[1]*esdf.size[2]; // size of the reachability array, index in reachability array of the current path voxel.
   int goal_idx = xyz_index3(goal);
   if (goal_idx < 0 || goal_idx > npixels){
@@ -1508,6 +1507,11 @@ bool Msfm3d::updatePath(const float goal[3])
     return false;
   }
   ROS_INFO("Attempting to find path to [%0.2f, %0.2f, %0.2f] from [%0.2f, %0.2f, %0.2f].", goal[0], goal[1], goal[2], position[0], position[1], position[2]);
+
+  if (!ground || use_gradient) {
+    return updatePathGradient(goal);
+  }
+
   std::vector<int> node_id_list(npixels, -1);
   std::vector<Node> visited;
 
@@ -1544,7 +1548,7 @@ bool Msfm3d::updatePath(const float goal[3])
         newpathmsg.poses.push_back(pose);
       }
       pathmsg = newpathmsg;
-      ROS_INFO("Path found of length %d after %d iterations.", newpathmsg.poses.size(), itt);
+      ROS_INFO("Path found of length %d after %d iterations.", (int)newpathmsg.poses.size(), itt);
       return true;
     }
     open_set.pop_back();
@@ -1583,7 +1587,7 @@ bool Msfm3d::updatePath(const float goal[3])
   return false;
 }
 
-bool Msfm3d::updatePathOneVoxel(const float goal[3])
+bool Msfm3d::updatePathGradient(const float goal[3])
 {
   int npixels = esdf.size[0]*esdf.size[1]*esdf.size[2], idx; // size of the reachability array, index in reachability array of the current path voxel.
   int neighbor[6]; // neighbor voxels to the current voxel
@@ -1924,13 +1928,9 @@ bool updateFrontier(Msfm3d& planner, ros::Publisher& frontier_publisher)
 
       // Create an array of neighbor indices
       for (int j=0; j<3; j++){
-        // if (point[j] < (planner.esdf.max[j] - planner.voxel_size)) {
         query[j] = point[j] + planner.voxel_size;
-        // }
         neighbor[2*j] = planner.xyz_index3(query);
-        // if (point[j] > (planner.esdf.min[j] + planner.voxel_size)) {
-          query[j] = point[j] - planner.voxel_size;
-        // }
+        query[j] = point[j] - planner.voxel_size;
         neighbor[2*j+1] = planner.xyz_index3(query);
         query[j] = point[j];
       }
@@ -2046,7 +2046,7 @@ bool updateFrontier(Msfm3d& planner, ros::Publisher& frontier_publisher)
     // ROS_INFO("Clustering filtered frontier published.");
     // sleep(3);
     // Group frontier within each cluster with greedy algorithm
-    planner.greedyGrouping(4*planner.voxel_size, false);
+    planner.greedyGrouping(4.1*planner.voxel_size, false);
     return true;
   } else {
     return false;
@@ -2170,7 +2170,7 @@ void closestGoalView(Msfm3d& planner, int *viewIndices, double *cost, const int 
     point[2] = planner.goalViews[indices_sorted[i]].pose.position.z;
     if (addCount == 0) {
       plannerCallCount++;
-      if (!(planner.updatePath(point))) addView = false;
+      if (!(planner.updatePath(point, planner.useReachGradient))) addView = false;
     }
     for (int j=(addCount-1); j>=0; j--) {
       // std::cout << j << std::endl;
@@ -2181,7 +2181,7 @@ void closestGoalView(Msfm3d& planner, int *viewIndices, double *cost, const int 
         addView = false; // Don't add goal views within dMin of each other
       } else {
         plannerCallCount++;
-        if(!planner.updatePath(point)) {
+        if(!planner.updatePath(point, planner.useReachGradient)) {
           addView = false;
         }
       }
@@ -2253,7 +2253,7 @@ void infoGoalView(Msfm3d& planner, int *viewIndices, double *utility, const int 
       if (calculate_actual_cost) {
 
         // Calculate the feasability and path to arrive at the current goal view
-        if (planner.updatePath(point)) {
+        if (planner.updatePath(point, planner.useReachGradient)) {
           // Get the angle between the current robot pose and the path start
           int j = min((int)planner.pathmsg.poses.size(), 10);
           float start_path_vec[3] = {(float)(planner.pathmsg.poses[j].pose.position.x - planner.pathmsg.poses[0].pose.position.x),
@@ -2819,7 +2819,7 @@ int main(int argc, char **argv)
   // Vehicle speed and turnPenalty
   float speed, turnPenalty;
   n.param("global_planning/speed", speed, (float)1.0); // m/s
-  n.param("global_planning/turnPenalty", turnPenalty, (float)5.0); // deg/s
+  n.param("global_planning/turnPenalty", turnPenalty, (float)0.5); // ratio of penalty to total path length
   planner.speed = speed;
   planner.turnPenalty = turnPenalty;
   ROS_INFO("Turn penalty set to %0.1f percent", planner.turnPenalty*100.0);
@@ -2976,6 +2976,9 @@ int main(int argc, char **argv)
   // View pose minimum obstacle distance
   n.param("global_planning/viewPoseObstacleDistance", planner.viewPoseObstacleDistance, (float)0.01);
 
+  // Use gradients for paths toggle
+  n.param("global_planning/useReachGradient", planner.useReachGradient, false); // A* is default
+
   ROS_INFO("Subscribing to Occupancy Grid...");
   ros::Subscriber sub0 = n.subscribe("octomap_binary", 1, &Msfm3d::callback_Octomap, &planner);
 
@@ -3064,6 +3067,13 @@ int main(int argc, char **argv)
   double costHome = -1.0;
   int goalIndex = 0;
   nav_msgs::Path newPath;
+  int agentCount = planner.numNeighbors + 1 + addedGoals;
+  double goalViewCost[agentCount];
+  int goalViewList[agentCount];
+  for (int i=0; i<agentCount; i++) {
+    goalViewList[i] = 0;
+    goalViewCost[i] = -1.0;
+  }
 
   ROS_INFO("Starting planner...");
   r.sleep();
@@ -3071,14 +3081,8 @@ int main(int argc, char **argv)
   {
     r.sleep();
     ros::spinOnce();
+    ROS_INFO("----------------------------------------");
     ROS_INFO("Planner Okay.");
-    int agentCount = planner.numNeighbors + 1 + addedGoals;
-    int goalViewList[agentCount];
-    double goalViewCost[agentCount];
-    for (int i=0; i<agentCount; i++) {
-      goalViewList[i] = 0;
-      goalViewCost[i] = -1.0;
-    }
     if (planner.receivedMap && !planner.esdf_or_octomap){
       planner.parsePointCloud();
     }
@@ -3110,7 +3114,8 @@ int main(int argc, char **argv)
           // Check to make sure that at least 50% of the viewed frontier voxels are still frontiers, if not, resample goal poses, if in frontier_replan mode.
           int stillFrontierCount = 0;
           bool replan = 0;
-          if ((int)planner.goalViews.size() == 0 || goalViewCost[0] < 0.0) {
+          if ((int)planner.goalViews.size() == 0) {
+            ROS_INFO("Replan triggered because no goal poses have been sampled.");
             replan = 1;
           } else if (replanTrigger == "frontier") {
             int viewableFrontierCount = (int)planner.goalViews[goalViewList[0]].cloud.size();
@@ -3123,11 +3128,13 @@ int main(int argc, char **argv)
               }
             }
             if (((float)stillFrontierCount)/((float)viewableFrontierCount)<= 0.5) {
+              ROS_INFO("Replan triggered because at least 50% of the frontiers seen by the previous goal pose have been observed.");
               replan = 1;
             }
           } else if (replanTrigger == "distance") {
             float _query[3] = {planner.goalViews[goalViewList[0]].pose.position.x, planner.goalViews[goalViewList[0]].pose.position.y, planner.goalViews[goalViewList[0]].pose.position.z};
             if (dist3(planner.position, _query) < goalArrivalDist) {
+              ROS_INFO("Replan triggered because the robot has arrived at the previous goal pose.");
               replan = 1;
             }
           } else if (oldFrontierClusterCount != planner.frontierClusterIndices.size()) {
@@ -3143,7 +3150,10 @@ int main(int argc, char **argv)
               float _query[3] = {planner.goalViews[goalViewList[0]].pose.position.x, planner.goalViews[goalViewList[0]].pose.position.y, planner.goalViews[goalViewList[0]].pose.position.z};
               int idx = planner.xyz_index3(_query);
               if ((idx < 0) || (idx >= planner.esdf.size[0]*planner.esdf.size[1]*planner.esdf.size[2])) {
-                if (planner.esdf.data[idx] < (planner.viewPoseObstacleDistance)) replan = 1;
+                if (planner.esdf.data[idx] < (planner.viewPoseObstacleDistance)) {
+                  ROS_INFO("Replan triggered because the current goal pose is too close to an obstacle.");
+                  replan = 1;
+                }
               }
             }
           }
@@ -3157,7 +3167,9 @@ int main(int argc, char **argv)
           }
 
           if (replan || ((replan_ticks % goal_tick_limit) == 0)) {
+            replan_ticks = 0;
             // Find goal poses from which to view the frontier
+            ROS_INFO("%d loops have passed since goal poses were last sampled.", ((replan_ticks-1) % goal_tick_limit));
             planner.updateGoalPoses();
             replan = 1;
             // Plot goal points
@@ -3188,7 +3200,7 @@ int main(int argc, char **argv)
           // Replan if the point is no longer reachable
           if (!replan) {
             float _query[3] = {planner.goalViews[goalViewList[0]].pose.position.x, planner.goalViews[goalViewList[0]].pose.position.y, planner.goalViews[goalViewList[0]].pose.position.z};
-            if (!planner.updatePath(_query)) {
+            if (!planner.updatePath(_query, planner.useReachGradient)) {
               ROS_INFO("Current goal point is unreachable, replanning...");
               replan = 1;
             }
@@ -3196,6 +3208,7 @@ int main(int argc, char **argv)
 
           // Find the best goal pose if the replan trigger has been toggled
           if (replan || ((replan_ticks % replan_tick_limit) == 0)) {
+            replan_ticks = 0;
             // ROS_INFO("At least 50 percent of the frontiers at the goal pose are no longer frontiers or %d loops have occurred since last plan.  Replanning...", (int)(replan_ticks % replan_tick_limit));
             // Find goal views with an information-based optimization
             if (goalFunction == "information") {
@@ -3240,7 +3253,7 @@ int main(int argc, char **argv)
                 if (goalViewCost[i]>=0.0) {
                   pcl::PointXYZ _query = planner.goalViews[goalViewList[i]].pose.position; // pcl::PointXYZ
                   float query[3] = {_query.x, _query.y, _query.z}; // float[3]
-                  if (planner.updatePath(query)) {
+                  if (planner.updatePath(query, planner.useReachGradient)) {
                     msfm3d::Goal newGoalMsg;
                     // Write a new goal pose, path, and cost for publishing
                     goalPose.header.stamp = ros::Time::now();
@@ -3335,7 +3348,7 @@ int main(int argc, char **argv)
           ROS_INFO("Goal point published!");
 
           // Calculate and publish path
-          goalFound.data = planner.updatePath(goal);
+          goalFound.data = planner.updatePath(goal, planner.useReachGradient);
           if (!goalFound.data)
             ROS_WARN("Couldn't find feasible path to goal.  Publishing previous path");
           pub15.publish(goalFound);
@@ -3403,7 +3416,7 @@ int main(int argc, char **argv)
           goalPose.pose.orientation.w = 1.0;
 
           // Find a path to the goal point
-          goalFound.data = planner.updatePath(goal);
+          goalFound.data = planner.updatePath(goal, planner.useReachGradient);
           pub15.publish(goalFound);
 
            // Publish path, goal point, and goal point only path
@@ -3424,6 +3437,7 @@ int main(int argc, char **argv)
       }
     }
     replan_ticks++;
+    ROS_INFO("----------------------------------------");
   }
 
   return 0;
