@@ -184,6 +184,7 @@ sensor_msgs::PointCloud2 FuseMaps()
   for (int i=0; i<3; i++) cost_map_size[i] = round((cost_map_max[i] - cost_map_min[i])/voxel_size) + 1;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cost_map_cloud (new pcl::PointCloud<pcl::PointXYZI>);
   for (int i=0; i<cost_map.size(); i++) {
+    if (cost_map[i] == (unseen_cost)) continue;
     float query[3];
     index3_xyz(i, query, cost_map_min, cost_map_size, voxel_size);
     pcl::PointXYZI p;

@@ -12,22 +12,7 @@
 
     <remap from="esdf" to="edt"/>
     <remap from="octomap_binary" to="octomap_ignore"/>
-    <remap from="cost_map" to="cost_map_prefilter"/>
-    <remap from="octomap_full" to="rough_octomap_full"/>
-  </node>
-
-  <node pkg="nodelet" type="nodelet" name="pcl_manager_costmap" args="manager" />
-
-  <!-- Run a passthrough filter to clean NaNs -->
-  <node pkg="nodelet" type="nodelet" name="passthrough_costmap" args="load pcl/PassThrough pcl_manager_costmap">
-    <remap from="~input" to="cost_map_prefilter" />
-    <remap from="~output" to="cost_map" />
-    <rosparam>
-      filter_field_name: intensity
-      filter_limit_min: -0.1
-      filter_limit_max: 100.0
-      filter_limit_negative: False
-    </rosparam>
+    <remap from="octomap_full" to="merged_map"/>
   </node>
 
   <node pkg="nodelet" type="nodelet" name="passthrough_reach" args="load pcl/PassThrough pcl_manager_costmap">
