@@ -297,6 +297,7 @@ class Msfm3d
     float customGoal[3] = {0.0, 0.0, 0.0};
 
     std::vector<Ball> blacklist;
+    bool blacklist_updated = false;
 
     void callback(sensor_msgs::PointCloud2 msg); // Subscriber callback function for PC2 msg (ESDF)
     void callback_Octomap(const octomap_msgs::Octomap::ConstPtr msg); // Subscriber callback function for Octomap msg
@@ -363,6 +364,7 @@ void Msfm3d::callback_numNeighbors(const std_msgs::Int8 msg)
 
 void Msfm3d::callback_blacklist(const visualization_msgs::Marker msg)
 {
+  int blacklist_previous_size = blacklist.size();
   blacklist.clear();
   for (int i=0; i<msg.points.size(); i++) {
     Ball b;
@@ -372,6 +374,7 @@ void Msfm3d::callback_blacklist(const visualization_msgs::Marker msg)
     b.r = msg.scale.x;
     blacklist.push_back(b);
   }
+  if (blacklist.size() != blacklist_previous_size) blacklist_updated = true;
   return;
 }
 
@@ -3114,6 +3117,11 @@ int main(int argc, char **argv)
           // Check to make sure that at least 50% of the viewed frontier voxels are still frontiers, if not, resample goal poses, if in frontier_replan mode.
           int stillFrontierCount = 0;
           bool replan = 0;
+          if (planner.blacklist_updated) {
+            replan = 1;
+            planner.blacklist_updated = false;
+          }
+
           if ((int)planner.goalViews.size() == 0) {
             ROS_INFO("Replan triggered because no goal poses have been sampled.");
             replan = 1;
