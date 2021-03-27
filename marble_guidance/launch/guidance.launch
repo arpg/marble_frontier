@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <node pkg="marble_guidance" type="guidance_node.py" name="guidance_controller">
+  <node pkg="marble_frontier_guidance" type="guidance_node.py" name="guidance_controller">
     <param name="vehicle_type" type="string" value="ground" />
     <param name="fixed_frame" type="string" value="world" />
     <param name="speed" value="1.0" />
