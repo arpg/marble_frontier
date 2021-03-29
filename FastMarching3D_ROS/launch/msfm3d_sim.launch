@@ -52,22 +52,28 @@
     <param name="normalThresholdZ" value="0.4" />
 
     <!-- Number of ticks before replanning -->
-    <param name="replan_ticks" value="30" />
+    <param name="replan_ticks" value="5" />
     <!-- Number of ticks before sampling new goal poses -->
-    <param name="goal_ticks" value="100" />
+    <param name="goal_ticks" value="25" />
     <!-- Replan trigger method -->
     <!-- <param name="replanTrigger" type="string" value="frontier"/> -->
     <param name="replanTrigger" type="string" value="distance"/>
 
     <!-- Location of the environment entrance. (Default is [0.0, 0.0, 0.0])  The robot will not explore area within entrance_radius meters of this point -->
-    <param name="entrance_x" value="2.0" />
-    <param name="entrance_y" value="1.0" />
-    <param name="entrance_z" value="0.4" />
-    <!-- <param name="entrance_x" value="7.5" />
-    <param name="entrance_y" value="-298.8" />
-    <param name="entrance_z" value="2.3" /> -->
-    <!-- <param name="entrance_z" value="2.0" /> -->
-    <param name="entrance_radius" value="0.0" />
+    <param name="entranceShape" value="Box"/>
+      <!-- If entrance is sphere -->
+      <param name="entrance_x" value="0.0" />
+      <param name="entrance_y" value="0.0" />
+      <param name="entrance_z" value="0.0" />
+      <param name="entrance_radius" value="0.0" />
+
+      <!-- If entrance is box -->
+      <param name="entranceBox_xmin" value= "-30.0"/>
+      <param name="entranceBox_xmax" value= "0.0"/>
+      <param name="entranceBox_ymin" value= "-15.0"/>
+      <param name="entranceBox_ymax" value= "15.0"/>
+      <param name="entranceBox_zmin" value= "-5.0"/>
+      <param name="entranceBox_zmax" value= "5.0"/>
 
     <!-- Camera viewing parameters, angles in degrees, ranges in meters -->
     <param name="cameraVerticalFoV" value="50.0"/>
@@ -86,7 +92,7 @@
     <param name="robot2camera_q_z" value="0.0"/> -->
 
     <!-- Update Rate, default is 1.0 Hz -->
-    <param name="updateRate" value="1"/>
+    <param name="updateRate" value="1.0"/>
 
     <!-- Inflated Obstacle width -->
     <param name="inflateWidth" value="0.0"/>
@@ -102,8 +108,8 @@
 
     <!-- Vehicle Volume Extents -->
     <param name="vehicleVolumeOn" value="true"/>
-    <param name="vehicleVolumeXmin" value="-0.4"/>
-    <param name="vehicleVolumeXmax" value="0.4"/>
+    <param name="vehicleVolumeXmin" value="-0.5"/>
+    <param name="vehicleVolumeXmax" value="0.5"/>
     <param name="vehicleVolumeYmin" value="-0.4"/>
     <param name="vehicleVolumeYmax" value="0.4"/>
     <param name="vehicleVolumeZmin" value="-0.2"/>
@@ -118,7 +124,7 @@
 
     <!-- Multi-agent Parameters -->
     <param name="agentCount" value="2"/>
-    <param name="goalViewSeparation" value = "3.0"/>
+    <param name="goalViewSeparation" value = "2.5"/>
 
     <!-- Cost Function -->
     <param name="goalFunction" type="string" value="cost"/>
@@ -127,6 +133,8 @@
     <!-- 5*(tanh(ESDF - e) + 1)/2.0 is used on each ESDF voxel so convert accordingly-->
     <param name="viewPoseObstacleDistance" value="0.4"/>
     <!-- <param name="viewPoseObstacleDistance" value="0.0095"/> -->
+
+    <param name="addedGoals" value="3"/>
 
   </node>
 
