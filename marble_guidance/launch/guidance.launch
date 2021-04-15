@@ -5,11 +5,11 @@
     <param name="vehicle_type" type="string" value="ground" />
     <param name="fixed_frame" type="string" value="world" />
     <param name="speed" value="1.0" />
-    <param name="Tstar" value="1.5" />
+    <param name="Tstar" value="0.75" />
     <param name="reverse" value="false" />
 
     <!-- <remap from="odometry" to="odometry" /> -->
-    <remap from="path" to="ma_goal_path"/>
+    <remap from="path" to="stitched_path"/>
     <!-- <remap from="path" to="planned_path"/> -->
     <remap from="goal_pose" to="ma_goal"/>
     <remap from="cmd_vel" to="cmd_vel_guidance"/>

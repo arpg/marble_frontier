@@ -11,8 +11,8 @@
     <param name="unseen_cost" value="-1.0"/>
 
     <remap from="esdf" to="edt"/>
-    <remap from="octomap_binary" to="octomap_ignore"/>
-    <remap from="octomap_full" to="merged_map"/>
+    <remap from="octomap_binary" to="octomap_binary"/>
+    <remap from="octomap_full" to="octomap_ignore"/>
   </node>
 
   <node pkg="nodelet" type="nodelet" name="passthrough_reach" args="load pcl/PassThrough pcl_manager_costmap">

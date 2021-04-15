@@ -3,11 +3,11 @@
   <arg name="ground_vehicle" default="true" />
   <arg name="resolution" default="0.2" />
 
-  <node pkg="msfm3d" type="msfm3d" name="global_planning">
+  <node pkg="msfm3d" type="msfm3d" name="global_planning" respawn="true">
     <!-- Inputs (Subscribed Topic Names) -->
 
     <remap from="octomap_binary" to="octomap_binary_crap"/>
-    <remap from="odometry" to="odometry"/>
+    <remap from="odometry" to="odometry_stitch"/>
 
     <!-- Outputs (Published Topic Names) -->
 
@@ -58,24 +58,24 @@
     <!-- <param name="replanTrigger" type="string" value="distance"/> -->
 
     <!-- Location of the environment entrance. (Default is [0.0, 0.0, 0.0])  The robot will not explore area within entrance_radius meters of this point -->
-    <param name="entranceShape" value="Box"/>
+    <param name="entranceShape" value="Sphere"/>
       <!-- If entrance is sphere -->
-      <param name="entrance_x" value="-10.0" />
+      <param name="entrance_x" value="-1.0" />
       <param name="entrance_y" value="0.0" />
-      <param name="entrance_z" value="0.0" />
+      <param name="entrance_z" value="0.2" />
       <!-- <param name="entrance_x" value="10.0" />
       <param name="entrance_y" value="27.0" />
       <param name="entrance_z" value="7.6" /> -->
       <!-- <param name="entrance_x" value="4.0" /> -->
       <!-- <param name="entrance_y" value="0.0" /> -->
       <!-- <param name="entrance_z" value="0.1" /> -->
-      <param name="entrance_radius" value="11.0" />
+      <param name="entrance_radius" value="3.0" />
 
       <!-- If entrance is box -->
       <param name="entranceBox_xmin" value= "-10.0"/>
       <param name="entranceBox_xmax" value= "0.0"/>
-      <param name="entranceBox_ymin" value= "-10.0"/>
-      <param name="entranceBox_ymax" value= "10.0"/>
+      <param name="entranceBox_ymin" value= "-5.0"/>
+      <param name="entranceBox_ymax" value= "5.0"/>
       <param name="entranceBox_zmin" value= "-2.0"/>
       <param name="entranceBox_zmax" value= "5.0"/>
 
@@ -99,7 +99,7 @@
     <param name="updateRate" value="1.0"/>
 
     <!-- Inflated Obstacle width -->
-    <param name="inflateWidth" value="0.0"/>
+    <param name="inflateWidth" value="0"/>
 
     <!-- Vehicle Fence Volume Limits -->
     <!-- <param name="fenceOn" value="true"/>
@@ -118,6 +118,12 @@
     <param name="vehicleVolumeYmax" value="0.6"/>
     <param name="vehicleVolumeZmin" value="-0.2"/>
     <param name="vehicleVolumeZmax" value="0.2"/>
+    <!-- <param name="vehicleVolumeXmin" value="-0.65"/>
+    <param name="vehicleVolumeXmax" value="0.65"/>
+    <param name="vehicleVolumeYmin" value="-0.3"/>
+    <param name="vehicleVolumeYmax" value="0.3"/>
+    <param name="vehicleVolumeZmin" value="-0.15"/>
+    <param name="vehicleVolumeZmax" value="0.65"/> -->
 
     <!-- Fix vehicle goal height (in meters) above map ground level for a quad/ground vehicle -->
     <param name="fixGoalHeightAGL" value="false"/>
