@@ -9,7 +9,7 @@
     <arg name="robot_frame" value="$(arg vehicle_name)/base_link"/>
 
     <include file="$(find marble_frontier_guidance)/launch/guidance.launch"/>
-    <include file="$(find receding_horizon_stitcher)/launch/stitcher.launch"/>
+    <!-- <include file="$(find receding_horizon_stitcher)/launch/stitcher.launch"/> -->
     <include file="$(find ground_finder)/launch/traversability_mapping.launch" unless="$(arg enable_traversability)">
         <arg name="resolution" value="$(arg resolution)"/>
     </include>
